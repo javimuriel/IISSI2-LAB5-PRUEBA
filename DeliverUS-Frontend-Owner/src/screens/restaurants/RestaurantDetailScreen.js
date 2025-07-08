@@ -1,8 +1,7 @@
 /* eslint-disable react/prop-types */
 import React, { useEffect, useState } from 'react'
-import { StyleSheet, View, FlatList, ImageBackground, Image, Pressable } from 'react-native'
+import { StyleSheet, View, FlatList, ImageBackground, Image } from 'react-native'
 import { showMessage } from 'react-native-flash-message'
-import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { getDetail } from '../../api/RestaurantEndpoints'
 import ImageCard from '../../components/ImageCard'
 import TextRegular from '../../components/TextRegular'
@@ -11,17 +10,24 @@ import * as GlobalStyles from '../../styles/GlobalStyles'
 import defaultProductImage from '../../../assets/product.jpeg'
 import { API_BASE_URL } from '@env'
 
-
-export default function RestaurantDetailScreen({ navigation, route }) {
+export default function RestaurantDetailScreen ({ navigation, route }) {
   const [restaurant, setRestaurant] = useState({})
 
   useEffect(() => {
-    console.log('Loading restaurant, please wait 2 seconds')
-    setTimeout(() => {
-      const fetchedRestaurant = getDetail(route.params.id)
-      setRestaurant(fetchedRestaurant)
-      console.log('Restaurant loaded')
-    }, 2000)
+    async function fetchRestaurantDetails () {
+      try {
+        const fetchedRestaurants = await getDetail(route.params.id)
+        setRestaurant(fetchedRestaurants)
+      } catch (error) {
+        showMessage({
+          message: `There was an error while retrieving restaurant details. ${error}`,
+          type: 'error',
+          style: GlobalStyles.flashStyle,
+          titleStyle: GlobalStyles.flashTextStyle
+        })
+      }
+    }
+    fetchRestaurantDetails()
   }, [])
 
   const renderHeader = () => {
@@ -51,10 +57,19 @@ export default function RestaurantDetailScreen({ navigation, route }) {
     )
   }
 
+  const renderEmptyList = () => {
+    return (
+      <View style={styles.emptyList}>
+        <TextRegular>No products available.</TextRegular>
+      </View>
+    )
+  }
+
   return (
     <View style={styles.container}>
       <FlatList
         ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmptyList}
         style={styles.container}
         data={restaurant.products}
         renderItem={renderProduct}
@@ -102,4 +117,10 @@ const styles = StyleSheet.create({
     marginRight: 5,
     color: GlobalStyles.brandSecondary
   },
+  emptyList: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20
+  }
 })
